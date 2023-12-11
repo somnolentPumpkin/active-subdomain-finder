@@ -1,0 +1,34 @@
+#!/bin/bash
+figlet "Beth's Subdomain Enumerator"
+echo -e "\e[1;0m Checking for active subdomains for $1.\n"
+subfinder -d $1 -o $1.txt &>/dev/null
+PROTOCOL="https"
+if [ "$2" = "http" ]
+then
+        PROTOCOL="http"
+fi
+
+while IFS= read -r line; do
+        STATUS=$(curl --max-time 10 -sI $PROTOCOL://$line | cut -d " " -f2 | head -1)
+        if [ "$STATUS" = "" ]
+        then
+                echo -e "\e[1;31m No response for $line."
+        elif [ "$STATUS" = "301" ]
+        then
+                echo -e "\e[1;33m $line was detected, but seems to be a redirect. [$STATUS]"
+        elif [ "$STATUS" = "302" ]
+        then
+                echo -e "\e[1;33m $line was detected, but seems to be a redirect. [$STATUS]"
+        elif [ "$STATUS" = "200" ]
+        then
+                echo -e "\e[1;32m $line seems to be a valid web address. [$STATUS]"
+        elif [ "$STATUS" = "403" ]
+        then
+                echo -e "\e[1;33m $line was detected, but access is forbidden. [$STATUS]"
+        elif [ "$STATUS" = "404" ]
+        then
+                echo -e "\e[1;31m returned a response, but the page was not found. [$STATUS]"
+        else
+                echo -e "\e[1;0m $line was detected, but may or may not be a valid web address. [$STATUS]"
+        fi
+done < $1.txt
